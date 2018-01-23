@@ -1,0 +1,18 @@
+{
+  "name": "gource-gravatar",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "md5": "^2.2.1",
+    "mkdirp": "^0.5.1",
+    "request": "^2.83.0",
+    "yargs": "^10.1.1"
+  }
+}
