@@ -39,7 +39,7 @@ exec('git shortlog -s -n -e < ' + tty, {
     nbUsers++
 
     promises.push(
-      download('http://www.gravatar.com/avatar/' + md5(email) + '?s=100', path.join(outFolder, username + '.jpg'))
+      download('http://www.gravatar.com/avatar/' + md5(email.trim()) + '?s=100', path.join(outFolder, username.trim() + '.jpg'))
       .then(({ statusCode, url }) => console.log(`GET ${statusCode} ${url}`)))
     nbFiles++
   })
