@@ -1,16 +1,18 @@
-const args = require('yargs').command('$0 <path> [outFolder]').argv
+const args = require('minimist')(process.argv.slice(2))._
 const path = require('path')
 const fs = require('fs')
 const mkDirP = require('mkdirp').sync
 const { exec } = require('child_process')
 const md5 = require('md5')
-const request = require('request')
+const http = require('http')
 
-args.outFolder = args.outFolder || path.join('.git', 'gravatar')
+if(args.length === 0) {
+  console.log('Command usage: server.js <path> [outFolder]')
+}
 
 const tty = process.platform === 'win32' ? 'CON' : '/dev/tty'
-const folder = path.resolve(args.path)
-const outFolder = path.resolve(folder, args.outFolder)
+const folder = path.resolve(args[0])
+const outFolder = path.resolve(folder, args[1] || path.join('.git', 'gravatar'))
 
 if (!fs.existsSync(folder)) {
   return runError(`The path '${folder}' doesn't exist`)
@@ -36,7 +38,9 @@ exec('git shortlog -s -n -e < ' + tty, {
     const [matches, username, email] = line.match(/^[0-9]+\s*([^<]+)\s*<([^>]+)>$/i)
     nbUsers++
 
-    promises.push(download('http://www.gravatar.com/avatar/' + md5(email) + '?s=100', path.join(outFolder, username + '.jpg')))
+    promises.push(
+      download('http://www.gravatar.com/avatar/' + md5(email) + '?s=100', path.join(outFolder, username + '.jpg'))
+      .then(({ statusCode, url }) => console.log(`GET ${statusCode} ${url}`)))
     nbFiles++
   })
 
@@ -46,16 +50,19 @@ exec('git shortlog -s -n -e < ' + tty, {
   })
 })
 
-function download (uri, filename) {
+function download (url, filename) {
   return new Promise(resolve => {
-    request.head(uri, (err, res) => {
-      console.log(`${res.method || 'GET'} ${res.statusCode} ${uri}`)
-      /* console.log('  content-type:', res.headers['content-type'])
-      console.log('  content-length:', res.headers['content-length']) */
+    const file = fs.createWriteStream(filename)
 
-      if (err) throw err
+    http.get(url, (res) => {
+      res.pipe(file)
+      file.on('finish', () => {
+        file.close(() => resolve({ statusCode: res.statusCode, url }))
+      })
 
-      request(uri).pipe(fs.createWriteStream(filename)).on('close', resolve)
+    }).on('error', (err) => {
+      fs.unlinkSync(file)
+      throw err
     })
   })
 }
